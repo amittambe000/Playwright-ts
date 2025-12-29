@@ -11,6 +11,6 @@ test.describe("Leads Management",()=>{
         await expect(page).toHaveURL(/.*action=DetailView.*/)
 
         // Verify the lead was created with the correct name
-        await expect(page.locator('#full_name')).toContainText(leadName+ 'abc')
+        await expect(page.locator('#full_name')).toContainText(leadName)
     })
 })
