@@ -1,0 +1,69 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: playwright-tests
+  labels:
+    app: playwright
+    type: e2e-tests
+spec:
+  # Don't retry if tests fail
+  backoffLimit: 0
+
+  # Keep job for 10 minutes after completion (gives time to copy results)
+  ttlSecondsAfterFinished: 600
+
+  template:
+    metadata:
+      labels:
+        app: playwright
+    spec:
+      # Don't restart the pod when tests finish
+      restartPolicy: Never
+
+      containers:
+        - name: playwright-tests
+          image: playwright-crm:latest
+
+          # Use local image, don't try to pull from registry
+          imagePullPolicy: Never
+
+          # Override command to keep container alive after tests (even on failure)
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              echo "🚀 Starting Playwright tests..."
+              xvfb-run --auto-servernum -- npx playwright test || true
+              TEST_EXIT_CODE=$?
+              echo ""
+              if [ $TEST_EXIT_CODE -eq 0 ]; then
+                echo "✅ All tests PASSED!"
+              else
+                echo "❌ Some tests FAILED (exit code: $TEST_EXIT_CODE)"
+              fi
+              echo ""
+              echo "📁 Files in /app:"
+              ls -la /app/playwright-report/ 2>/dev/null || echo "  No playwright-report"
+              ls -la /app/allure-results/ 2>/dev/null || echo "  No allure-results"
+              echo ""
+              echo "⏳ Keeping container alive for 5 minutes to copy results..."
+              echo "   Run: npm run k8s:copy-results"
+              echo ""
+              sleep 300
+              echo "🔚 Container shutting down. Results may no longer be available."
+              exit 0
+
+          # Environment variables
+          env:
+            - name: WORKERS
+              value: "2"
+            - name: FORCE_COLOR
+              value: "1"
+
+          # Resource limits (adjust based on your needs)
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"

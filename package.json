@@ -1,0 +1,26 @@
+{
+  "name": "playwright-ts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:trace": "npx playwright test --trace on",
+    "report": "allure serve allure-results",
+    "report:generate": "allure generate allure-results --clean && allure open allure-report",
+    "report:html": "npx playwright show-report",
+    "docker:build": "docker build -t playwright-crm .",
+    "docker:test": "docker run --rm -it --cpus=2 -e WORKERS=4 -v $(pwd)/playwright-report:/app/playwright-report -v $(pwd)/test-results:/app/test-results -v $(pwd)/allure-results:/app/allure-results playwright-crm",
+    "k8s:test": "bash k8s/run-tests.sh",
+    "k8s:copy-results": "bash k8s/copy-results.sh"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@types/node": "^25.0.3",
+    "allure-playwright": "^3.4.3"
+  }
+}
