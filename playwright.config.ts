@@ -55,7 +55,7 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        headless: false, // Run with visible browser (xvfb provides virtual display in Docker)
+        headless: false, // Always headed (xvfb provides virtual display in CI/Docker)
         storageState:'playwright/.auth/user.json'
       },
       dependencies:['setup'],
