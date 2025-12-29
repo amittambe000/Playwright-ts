@@ -7,13 +7,11 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
-# Sets permissions for GitHub Pages deployment
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment
 concurrency:
   group: "pages"
   cancel-in-progress: false
@@ -45,7 +43,7 @@ jobs:
 
       - name: Run Playwright tests
         run: xvfb-run --auto-servernum -- npx playwright test --project=setup --project=chromium
-        continue-on-error: true # Don't fail workflow, we want to publish report even on test failure
+        continue-on-error: true
 
       - name: Upload Playwright Report
         uses: actions/upload-artifact@v4
@@ -71,40 +69,30 @@ jobs:
           path: test-results/
           retention-days: 7
 
-  # Job to generate and deploy Allure report to GitHub Pages
   deploy-report:
     name: Deploy Allure Report
     needs: test
     runs-on: ubuntu-latest
-    if: always() # Run even if tests fail
+    if: always()
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Download Allure Results
         uses: actions/download-artifact@v4
         with:
           name: allure-results
           path: allure-results
 
-      - name: Get Allure history
+      - name: Download Previous Allure History
         continue-on-error: true
-        run: |
-          echo "📥 Fetching previous report for history..."
-          git clone --depth 1 --single-branch --branch gh-pages https://github.com/${{ github.repository }}.git gh-pages || echo "No gh-pages branch yet"
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          workflow: playwright.yml
+          name: allure-history
+          path: allure-history
+          search_artifacts: true
+          if_no_artifact_found: warn
 
-          echo "📁 Contents of gh-pages:"
-          ls -la gh-pages/ || echo "gh-pages folder not found"
-
-          if [ -d "gh-pages/history" ]; then
-            echo "✅ Found history folder!"
-            ls -la gh-pages/history/
-          else
-            echo "⚠️ No history folder found"
-          fi
-
-      - name: Setup Java (required for Allure)
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: "temurin"
@@ -116,28 +104,28 @@ jobs:
           tar -zxvf allure-2.27.0.tgz
           echo "$PWD/allure-2.27.0/bin" >> $GITHUB_PATH
 
-      - name: Build Allure Report
+      - name: Build Allure Report with History
         run: |
-          echo "📋 Contents of allure-results before adding history:"
-          ls -la allure-results/
-
-          # Copy history from previous deployment if exists
-          if [ -d "gh-pages/history" ]; then
-            echo "📜 Copying history from previous report..."
-            cp -r gh-pages/history allure-results/
-            echo "✅ History copied!"
+          # Copy history from previous runs if exists
+          if [ -d "allure-history" ]; then
+            echo "📜 Found previous history, copying..."
+            cp -r allure-history/* allure-results/ || true
           else
-            echo "⚠️ No previous history to copy"
+            echo "⚠️ No previous history found"
           fi
 
-          echo "📊 Generating Allure report..."
+          # Generate report
           allure generate allure-results --clean -o allure-report
 
-          echo "📁 Generated report contents:"
+          echo "📁 Report generated:"
           ls -la allure-report/
 
-          echo "📜 History in new report:"
-          ls -la allure-report/history/ || echo "No history generated"
+      - name: Save Allure History
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-history
+          path: allure-report/history
+          retention-days: 30
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
