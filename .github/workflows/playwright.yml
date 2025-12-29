@@ -89,12 +89,9 @@ jobs:
           path: allure-results
 
       - name: Get Allure history
-        uses: actions/checkout@v4
-        if: always()
         continue-on-error: true
-        with:
-          ref: gh-pages
-          path: gh-pages
+        run: |
+          git clone --single-branch --branch gh-pages https://github.com/${{ github.repository }}.git gh-pages || echo "No gh-pages branch yet, skipping history"
 
       - name: Setup Java (required for Allure)
         uses: actions/setup-java@v4
