@@ -17,10 +17,10 @@ export default defineConfig({
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
+  /* Retry on failure */
   retries: process.env.CI ? 2 : 1,
-  /* Workers: CI=1, otherwise use 4 or auto-detect */
-  workers: process.env.CI ? 1 : (process.env.WORKERS ? parseInt(process.env.WORKERS) : undefined),
+  /* Workers: Use WORKERS env var, or default to 4 in CI, or auto-detect locally */
+  workers: process.env.WORKERS ? parseInt(process.env.WORKERS) : (process.env.CI ? 4 : undefined),
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['list'],  // Real-time console output
