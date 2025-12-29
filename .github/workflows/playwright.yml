@@ -126,6 +126,7 @@ jobs:
           name: allure-history
           path: allure-report/history
           retention-days: 30
+          if-no-files-found: warn
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
